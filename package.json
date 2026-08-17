@@ -13,6 +13,26 @@
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
+  "keywords": [
+    "whatsapp",
+    "baileys",
+    "bot",
+    "api",
+    "sdk",
+    "wa-api",
+    "whatsapp-bot",
+    "automation"
+  ],
+  "author": "Neaterry6",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Neaterry6/broken-wa-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Neaterry6/broken-wa-api/issues"
+  },
+  "homepage": "https://github.com/Neaterry6/broken-wa-api#readme",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.16",
     "better-sqlite3": "^11.8.1",
@@ -24,5 +44,8 @@
     "pino": "^9.6.0",
     "qrcode-terminal": "^0.12.0",
     "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

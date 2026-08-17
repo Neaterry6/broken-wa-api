@@ -1,248 +1,181 @@
 # BROKEN WA API
 
-Custom WhatsApp API built on Baileys — multi-session, buttons, webhooks, automation.
-
-## Features
-
-- **Multi-session**: Run multiple WhatsApp accounts simultaneously
-- **Button messages**: Quick reply, URL, call, copy buttons
-- **Full send support**: Text, media (images/video/audio/docs), locations, contacts, polls, reactions
-- **Webhooks**: Real-time event forwarding to your server
-- **Automation engine**: Keyword triggers, scheduled messages, auto-replies
-- **WebSocket live stream**: Real-time message delivery
-- **Group management**: Create groups, fetch participants, manage settings
-- **Presence & typing**: Send typing indicators, online status
-- **Rate limiting**: Per-API-key rate limiting built in
-- **SQLite persistence**: All data stored locally
+Custom WhatsApp API & SDK powered by Baileys — multi-session, buttons, webhooks, automation.
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone <repo-url>
+# Install
+npm install broken-wa-api
+
+# Or from GitHub (private repo)
+npm install git+https://github.com/Neaterry6/broken-wa-api.git
+```
+
+## Usage in Your Bot
+
+```javascript
+const { createClient, pairCode } = require('broken-wa-api');
+
+// Create session
+const bot = createClient('my-bot');
+
+// Pair with phone (no QR needed)
+const code = await pairCode('2348012345678', 'my-bot');
+console.log('Pairing code:', code);
+
+// Connect
+await bot.connect();
+
+// Send text
+await bot.sendText('2348012345678@s.whatsapp.net', 'Hello!');
+
+// Send button
+await bot.sendButton(
+  '2348012345678@s.whatsapp.net',
+  'Choose:',
+  'Pick an option below',
+  'BROKEN',
+  [{ id: 'yes', text: 'Yes' }, { id: 'no', text: 'No' }]
+);
+
+// Send interactive (URL, Call, Copy buttons)
+await bot.sendInteractive('2348012345678@s.whatsapp.net', {
+  text: 'Actions:',
+  footer: 'BROKEN WA API',
+  interactiveButtons: [
+    {
+      name: 'cta_url',
+      buttonParamsJson: JSON.stringify({ display_text: 'Open Site', url: 'https://example.com' })
+    },
+    {
+      name: 'quick_reply',
+      buttonParamsJson: JSON.stringify({ display_text: 'Reply', id: 'reply' })
+    }
+  ]
+});
+```
+
+## Full API
+
+### Messaging
+```javascript
+await bot.sendText(jid, text, options)
+await bot.sendButton(jid, title, body, footer, buttons)
+await bot.sendInteractive(jid, { text, footer, interactiveButtons })
+await bot.sendMedia(jid, buffer, { caption, mimetype })
+await bot.sendLocation(jid, lat, lng, { name, address })
+await bot.sendContact(jid, contacts)
+await bot.sendReaction(messageId, reaction)
+await bot.sendPoll(jid, name, values, { multipleAnswers })
+await bot.sendAudio(jid, buffer, { mimetype })
+await bot.sendSticker(jid, buffer)
+await bot.sendVideo(jid, buffer, { caption })
+```
+
+### Groups
+```javascript
+await bot.createGroup(subject, participants, { description })
+await bot.getGroupParticipants(jid)
+await bot.addParticipant(groupId, jids)
+await bot.removeParticipant(groupId, jids)
+await bot.promoteParticipant(groupId, jids)
+await bot.demoteParticipant(groupId, jids)
+await bot.setGroupSubject(groupId, subject)
+await bot.setGroupDescription(groupId, desc)
+await bot.leaveGroup(groupId)
+await bot.acceptInvite(code)
+await bot.revokeInvite(groupId)
+```
+
+### Presence
+```javascript
+await bot.sendPresence('available' | 'unavailable', jid)
+await bot.showTyping(jid, durationMs)
+```
+
+### Event Listeners
+```javascript
+bot.sock.ev.on('messages.upsert', async (m) => {
+  // Handle incoming messages
+});
+
+bot.sock.ev.on('connection.update', (update) => {
+  const { connection } = update;
+  if (connection === 'open') console.log('Connected!');
+});
+```
+
+## Multi-Session
+
+```javascript
+const bot1 = createClient('bot-1');
+const bot2 = createClient('bot-2');
+
+await bot1.connect();
+await bot2.connect();
+
+// Both run independently
+await bot1.sendText(jid1, 'Hello from Bot 1');
+await bot2.sendText(jid2, 'Hello from Bot 2');
+```
+
+## As REST API Server
+
+Run as standalone API server:
+
+```bash
+# Clone and run
+git clone https://github.com/Neaterry6/broken-wa-api.git
 cd broken-wa-api
 npm install
-
-# Copy and edit env
 cp .env.example .env
-nano .env  # Set your JWT_SECRET
-
-# Run
+nano .env  # Set JWT_SECRET
 npm start
-
-# Or with Docker
-docker-compose up -d
 ```
 
-## API Endpoints
+### API Endpoints
 
-### Auth
 ```
-POST /login                    # { password: "owner" } → returns JWT token
-GET  /health                   # Health check
-```
-
-### Sessions
-```
-GET    /sessions               # List all sessions
-POST   /sessions               # Create session (requires auth)
-GET    /sessions/:id           # Session details
-DELETE /sessions/:id           # Delete session
-POST   /sessions/:id/pair-code # Pair via phone number
-GET    /sessions/:id/qr        # Get QR code
-GET    /connections            # All active connections
+POST /login                          # { password } → JWT token
+GET  /sessions                       # List sessions
+POST /sessions                       # Create session
+POST /sessions/:id/pair-code         # Get pairing code
+GET  /api/sessions/:id/send/text     # Send message
+POST /api/sessions/:id/send/button   # Send button
+POST /api/sessions/:id/send/interactive # Send interactive
+GET  /health                         # Health check
 ```
 
-### Messages (per session)
-```
-POST /api/sessions/:id/send/text        # { jid, text, quotedMessageId? }
-POST /api/sessions/:id/send/button      # { jid, body, buttons: [{id,text}] }
-POST /api/sessions/:id/send/interactive # Native flow buttons (URL, call, list)
-POST /api/sessions/:id/send/media       # { jid, media: base64, caption?, mimetype? }
-POST /api/sessions/:id/send/location    # { jid, latitude, longitude, name?, address? }
-POST /api/sessions/:id/send/contact     # { jid, contacts: [...] }
-POST /api/sessions/:id/send/reaction    # { messageId, reaction }
-POST /api/sessions/:id/send/poll        # { jid, name, values: [...], multipleAnswers? }
-POST /api/sessions/:id/archive          # { jid, archive: bool }
-POST /api/sessions/:id/read             # { jid, messageId }
-GET  /api/sessions/:id/messages         # Message history
-GET  /api/sessions/:id/stats            # Send/receive counts
+### Authentication
+
+```bash
+# JWT (Admin)
+Authorization: Bearer <token>
+
+# API Key (Third-party)
+?api_key=bwa_xxxxxxxxx
 ```
 
-### Admin (requires JWT)
+## Deployment
+
+### Railway
+```bash
+railway init
+railway up
+railway domain
 ```
-POST /admin/login                     # { password } → JWT
-GET  /admin/sessions                  # List sessions
-POST /admin/sessions                  # Create session
-DELETE /admin/sessions/:id            # Delete session
-POST /admin/sessions/:id/api-keys     # Generate API key
-GET  /admin/api-keys                  # List API keys
-PATCH /admin/api-keys/:id/toggle      # Enable/disable key
-GET  /admin/webhooks                  # List webhooks
-POST /admin/webhooks                  # Create webhook
-DELETE /admin/webhooks/:id            # Delete webhook
-GET  /admin/automations               # List automations
-POST /admin/automations               # Create automation
-PATCH /admin/automations/:id/toggle   # Enable/disable
-GET  /admin/stats                     # Usage stats
-POST /admin/webhooks/test             # Test webhook
-```
-
-### Webhooks & Automation
-```
-GET  /webhooks                        # List webhooks
-POST /webhooks                        # Create webhook
-DELETE /webhooks/:id                  # Delete webhook
-GET  /automations                     # List automations
-POST /automations                     # Create automation
-DELETE /automations/:id               # Delete automation
-```
-
-## Authentication
-
-Two methods:
-1. **JWT Token** (Admin panel): `Authorization: Bearer <token>`
-2. **API Key** (Third-party access): Query param `?api_key=bwa_xxx...`
-
-API keys are scoped per session with independent rate limits.
-
-## Button Examples
-
-### Quick Reply Buttons
-```json
-POST /api/sessions/:id/send/button
-{
-  "jid": "2348012345678@s.whatsapp.net",
-  "body": "Choose an option:",
-  "footer": "BROKEN WA API",
-  "buttons": [
-    { "id": "yes", "text": "Yes" },
-    { "id": "no", "text": "No" },
-    { "id": "maybe", "text": "Maybe" }
-  ]
-}
-```
-
-### Native Flow Buttons (URL, Call, Copy)
-```json
-POST /api/sessions/:id/send/interactive
-{
-  "jid": "2348012345678@s.whatsapp.net",
-  "text": "Choose an action:",
-  "footer": "Powered by BROKEN",
-  "interactiveButtons": [
-    {
-      "name": "cta_url",
-      "buttonParamsJson": "{\"display_text\":\"Visit Site\",\"url\":\"https://example.com\"}"
-    },
-    {
-      "name": "cta_call",
-      "buttonParamsJson": "{\"display_text\":\"Call Support\",\"phone_number\":\"+1234567890\"}"
-    },
-    {
-      "name": "cta_copy",
-      "buttonParamsJson": "{\"display_text\":\"Copy Code\",\"copy_code\":\"ABC123\"}"
-    },
-    {
-      "name": "quick_reply",
-      "buttonParamsJson": "{\"display_text\":\"Option A\",\"id\":\"opt_a\"}"
-    }
-  ]
-}
-```
-
-### List Menu (Single Select)
-```json
-POST /api/sessions/:id/send/interactive
-{
-  "jid": "2348012345678@s.whatsapp.net",
-  "text": "Select a plan:",
-  "footer": "BROKEN WA API",
-  "interactiveButtons": [
-    {
-      "name": "single_select",
-      "buttonParamsJson": "{\"title\":\"Choose Plan\",\"sections\":[{\"title\":\"Plans\",\"rows\":[{\"id\":\"free\",\"title\":\"Free\",\"description\":\"Basic features\"},{\"id\":\"pro\",\"title\":\"Pro\",\"description\":\"All features\"}]}]}"
-    }
-  ]
-}
-```
-
-## Webhook Events
-
-Subscribed events:
-- `messages.received` — Incoming messages
-- `messages.sent` — Outgoing message sent
-- `messages.updated` — Message status changed
-- `groups.updated` — Group metadata changed
-- `connection.update` — Connection state changed
-
-Webhook payload:
-```json
-{
-  "event": "messages.received",
-  "session": "<session-id>",
-  "timestamp": 1234567890,
-  "data": { ... }
-}
-```
-
-## Automation Triggers
-
-- `keyword` — Match text against pattern, trigger action
-- `reply` — Auto-reply to specific quoted messages
-- `schedule` — Run at cron intervals
-- `webhook` — Trigger when external webhook fires
-
-Actions:
-- `send_message` — Send text to JID
-- `send_button` — Send button message
-- `send_media` — Send media file
-- `send_location` — Send location
-- `webhook_call` — Call external endpoint
-- `sql_query` — Run database query
-
-## Deployment Options
-
-### Railway (Recommended)
-1. Connect GitHub repo to Railway
-2. Set env vars: `PORT=3000`, `JWT_SECRET=your-secret`
-3. Deploy → Railway gives you a live URL
-4. Use the URL as your webhook endpoint
 
 ### Docker
 ```bash
 docker-compose up -d
-# Access at http://localhost:3000
 ```
 
 ### VPS
 ```bash
 git clone <repo>
-cd broken-wa-api
 npm install
 pm2 start index.js --name "broken-wa"
-```
-
-## Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   Your App      │────▶│  BROKEN WA API   │────▶│ WhatsApp     │
-│  (third-party)  │◀────│  (Express +      │◀────│  Backend     │
-│                 │     │   Baileys)       │     │  (Meta)      │
-└─────────────────┘     └──────────────────┘     └─────────────┘
-                                 │
-                                 ▼
-                          ┌──────────────────┐
-                          │   Webhook        │
-                          │   Forwarding     │
-                          └──────────────────┘
-                                 │
-                                 ▼
-                          ┌──────────────────┐
-                          │  Your Server     │
-                          │  (receiver)      │
-                          └──────────────────┘
 ```
 
 ## License
