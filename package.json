@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "Custom WhatsApp API powered by Baileys — multi-session, buttons, webhooks, automation",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./index.js"
+    }
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js"
