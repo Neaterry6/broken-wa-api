@@ -90,10 +90,15 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 // --- Setup ---
 function setupServer(app) {
   // Routes
+  // Mount paths must NOT repeat a prefix the router already carries.
+  // admin is deliberately bare: the README documents POST /login and GET /sessions.
   app.use(require('./api/admin'));
-  app.use('/api/sessions/:sessionId/messages', require('./api/messages'));
-  app.use('/api/sessions/:sessionId/groups', require('./api/webhooks')); // reuse for group ops
-  app.use('/api/sessions', require('./api/sessions'));
+  // messages carries /:sessionId/send/... internally -> /api/sessions/:id/send/text
+  app.use('/api/sessions', require('./api/messages'));
+  // webhooks carries /groups/... and /:sessionId/presence internally
+  app.use('/api', require('./api/webhooks'));
+  // sessions carries /sessions and /owner/... internally -> /api/sessions, /api/owner/init
+  app.use('/api', require('./api/sessions'));
 
   // WebSocket for live events
   const WebSocket = require('ws');
@@ -118,6 +123,66 @@ function setupServer(app) {
 
   // Health check
   app.get('/health', (_, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+  // The startup banner advertises these, so they must actually exist.
+  app.get('/', (_, res) => res.json({
+    name: 'BROKEN WA API',
+    status: 'ok',
+    docs: '/api/docs',
+    health: '/health',
+  }));
+
+  app.get('/api/docs', (_, res) => res.json({
+    name: 'BROKEN WA API',
+    description: 'WhatsApp API and SDK powered by Baileys.',
+    auth: 'Send Authorization=[REDACTED] <token> or ?api_key=<key> on protected routes.',
+    endpoints: {
+      health: 'GET /health',
+      admin: {
+        login: 'POST /login',
+        listSessions: 'GET /sessions',
+        createSession: 'POST /sessions',
+        pairCode: 'POST /sessions/:id/pair-code',
+        apiKeys: 'POST /sessions/:id/api-keys',
+      },
+      sessions: {
+        ownerInit: 'GET /api/owner/init',
+        list: 'GET /api/sessions',
+        get: 'GET /api/sessions/:id',
+        remove: 'DELETE /api/sessions/:id',
+      },
+      messages: {
+        sendText: 'POST /api/sessions/:sessionId/send/text',
+        sendButton: 'POST /api/sessions/:sessionId/send/button',
+        sendInteractive: 'POST /api/sessions/:sessionId/send/interactive',
+        sendMedia: 'POST /api/sessions/:sessionId/send/media',
+        sendLocation: 'POST /api/sessions/:sessionId/send/location',
+        sendContact: 'POST /api/sessions/:sessionId/send/contact',
+        sendReaction: 'POST /api/sessions/:sessionId/send/reaction',
+        sendPoll: 'POST /api/sessions/:sessionId/send/poll',
+        forward: 'POST /api/sessions/:sessionId/forward',
+        archive: 'POST /api/sessions/:sessionId/archive',
+        markRead: 'POST /api/sessions/:sessionId/read',
+        history: 'GET /api/sessions/:sessionId/messages',
+        stats: 'GET /api/sessions/:sessionId/stats',
+      },
+      groups: {
+        create: 'POST /api/groups/create',
+        list: 'GET /api/groups/list',
+      },
+      presence: {
+        presence: 'POST /api/:sessionId/presence',
+        typing: 'POST /api/:sessionId/typing',
+      },
+      scrape: {
+        npmSearch: 'GET /api/scrape/npm/search?q=',
+        spotifySearch: 'GET /api/scrape/spotify/search?q=',
+        pinterestSearch: 'GET /api/scrape/pinterest/search?q=',
+        youtubeSearch: 'GET /api/scrape/youtube/search?q=',
+        webScrape: 'POST /api/scrape/web/scrape',
+      },
+    },
+  }));
 }
 
 function connectSocket(sock, sessionId) {

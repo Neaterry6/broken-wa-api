@@ -140,7 +140,7 @@ npm start
 POST /login                          # { password } → JWT token
 GET  /sessions                       # List sessions
 POST /sessions                       # Create session
-POST /sessions/:id/pair-code         # Get pairing code
+POST /api/sessions/:id/pair-code     # Get pairing code
 GET  /api/sessions/:id/send/text     # Send message
 POST /api/sessions/:id/send/button   # Send button
 POST /api/sessions/:id/send/interactive # Send interactive

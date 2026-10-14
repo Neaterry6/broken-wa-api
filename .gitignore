@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+npm-debug.log*
+
+# secrets — never commit real config
+.env
+.env.local
+.env.*.local
+
+# runtime data
+sessions.db
+*.db
+*.db-journal
+*.sqlite
+auth_state/
+sessions/
+storage/
+
+# logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

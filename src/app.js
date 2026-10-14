@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const { setupServer } = require('./src/server');
-const logger = require('./src/utils/logger');
-const scraperRoutes = require('./src/api/scrapers');
+const { setupServer } = require('./server');
+const logger = require('./utils/logger');
+const scraperRoutes = require('./api/scrapers');
 
 const app = express();
 

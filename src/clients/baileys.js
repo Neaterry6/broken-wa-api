@@ -4,7 +4,7 @@ const Pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const path = require('path');
-const logger = require('./utils/logger');
+const logger = require('../utils/logger');
 
 const authCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
@@ -78,7 +78,7 @@ class BaileysClient {
       } else if (connection === 'open') {
         logger.info({ sessionId: this.sessionId, phone: this.sock.user?.id }, 'Connected successfully');
         const phone = this.sock.user?.id?.split(':')[0];
-        require('./utils/database').prepare('UPDATE sessions SET status = ?, phone = ? WHERE id = ?').run('connected', phone, this.sessionId);
+        require('../utils/database').prepare('UPDATE sessions SET status = ?, phone = ? WHERE id = ?').run('connected', phone, this.sessionId);
       }
     });
 

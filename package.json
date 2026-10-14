@@ -1,7 +1,7 @@
 {
   "name": "broken-wa-api",
   "version": "1.0.0",
-  "description": "Custom WhatsApp API powered by Baileys — multi-session, buttons, webhooks, automation",
+  "description": "Custom WhatsApp API powered by Baileys \u2014 multi-session, buttons, webhooks, automation",
   "main": "index.js",
   "exports": {
     ".": {
@@ -10,8 +10,9 @@
     }
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "test": "node --test test/"
   },
   "keywords": [
     "whatsapp",
@@ -36,6 +37,7 @@
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.16",
     "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
@@ -47,5 +49,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "README.md",
+    "EXAMPLES.md",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".env.example"
+  ]
 }
